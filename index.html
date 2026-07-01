@@ -3,147 +3,335 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>日本地図 投票シミュレーター</title>
+    <title>47都道府県 リアルタイム投票シミュレーター</title>
     <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --primary-color: #0ea5e9; /* 投票ヒートマップのベース青色 */
+            --accent-color: #f97316;  /* 自分が投票した場所のオレンジ */
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --border-color: #e2e8f0;
+        }
+
         body {
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: #f5f7fa;
-            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
             margin: 0;
-            padding: 20px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-        h1 { margin-bottom: 5px; color: #2c3e50; }
-        .description { color: #7f8c8d; margin-bottom: 20px; text-align: center; }
-        
-        /* 地図のコンテナ */
-        .map-container {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+
+        header {
+            text-align: center;
+            margin-bottom: 24px;
             max-width: 600px;
-            width: 100%;
-        }
-        
-        /* SVG都道府県の基本スタイル */
-        .prefecture {
-            cursor: pointer;
-            transition: fill 0.3s ease, stroke 0.3s ease;
-            stroke: #ffffff;
-            stroke-width: 2;
-        }
-        .prefecture:hover {
-            opacity: 0.8;
-            stroke: #2c3e50;
         }
 
-        /* ステータス表示 */
-        .status-box {
-            margin-top: 20px;
-            padding: 15px;
-            background: #eef2f7;
-            border-radius: 8px;
+        h1 {
+            font-size: 1.8rem;
+            margin: 0 0 8px 0;
+            color: #0f172a;
+        }
+
+        .description {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            line-height: 1.5;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
             width: 100%;
-            max-width: 560px;
+            max-width: 900px;
+        }
+
+        @media (min-width: 768px) {
+            .main-container {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+        }
+
+        /* 地図コンテナ */
+        .map-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            flex: 1;
+        }
+
+        /* SVG日本地図のスタイル */
+        svg {
+            width: 100%;
+            height: auto;
+            max-height: 550px;
+        }
+
+        .pref {
+            cursor: pointer;
+            transition: fill 0.2s ease, stroke 0.2s ease;
+            stroke: #ffffff;
+            stroke-width: 1.5;
+        }
+
+        .pref:hover {
+            opacity: 0.85;
+            stroke: #334155;
+            stroke-width: 2;
+        }
+
+        .pref-label {
+            font-size: 10px;
+            font-weight: bold;
+            fill: #334155;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* サイド情報・ランキング */
+        .info-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @media (min-width: 768px) {
+            .info-card {
+                width: 320px;
+            }
+        }
+
+        .status-box {
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 8px;
             text-align: center;
             font-weight: bold;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
         }
-        .info-panel {
-            margin-top: 10px;
-            font-size: 0.9em;
-            color: #555;
+
+        .ranking-title {
+            font-size: 1.1rem;
+            margin: 0 0 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .ranking-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .ranking-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.9rem;
+        }
+
+        .ranking-item:nth-child(1) { font-weight: bold; color: #b45309; background: #fffbeb; }
+        .ranking-item:nth-child(2) { font-weight: bold; color: #475569; }
+        .ranking-item:nth-child(3) { font-weight: bold; color: #78350f; }
+
+        /* 凡例 */
+        .legend {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 12px;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+        }
+        .legend-bar {
+            width: 100px;
+            height: 10px;
+            background: linear-gradient(to right, rgba(14, 165, 233, 0.1), rgba(14, 165, 233, 1));
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
 
-    <h1>都道府県 投票アプリ</h1>
-    <div class="description">都道府県をタップして投票してください。他ユーザーの投票結果（グラデーション）にあなたの1票が反映されます。</div>
+    <header>
+        <h1>47都道府県 投票アプリ</h1>
+        <div class="description">
+            日本地図をタップして投票してください。他ユーザーの投票結果（グラデーションの濃淡）に、あなたの1票がニアリアルタイムで反映・集計されます。
+        </div>
+    </header>
 
-    <div class="map-container">
-        <svg viewBox="0 0 500 400" width="100%" height="100%">
-            <rect width="100%" height="100%" fill="#f8fafc"/>
-            
-            <g id="japan-map">
-                <rect id="JP-01" class="prefecture" x="350" y="20" width="80" height="60" rx="5" fill="#cbd5e1" />
-                <text x="390" y="55" font-size="12" fill="#333" text-anchor="middle" pointer-events="none">北海道</text>
+    <div class="main-container">
+        <div class="map-card">
+            <svg viewBox="0 0 540 460">
+                <rect width="100%" height="100%" fill="#f8fafc" rx="12"/>
+                <g id="map-grid">
+                    <g><rect id="JP-01" class="pref" x="440" y="20" width="60" height="50" rx="4"/><text x="470" y="45" class="pref-label">北海道</text></g>
+                    <g><rect id="JP-02" class="pref" x="440" y="100" width="40" height="35" rx="4"/><text x="460" y="117" class="pref-label">青森</text></g>
+                    <g><rect id="JP-03" class="pref" x="440" y="140" width="40" height="35" rx="4"/><text x="460" y="157" class="pref-label">岩手</text></g>
+                    <g><rect id="JP-04" class="pref" x="440" y="180" width="40" height="35" rx="4"/><text x="460" y="197" class="pref-label">宮城</text></g>
+                    <g><rect id="JP-05" class="pref" x="395" y="140" width="40" height="35" rx="4"/><text x="415" y="157" class="pref-label">秋田</text></g>
+                    <g><rect id="JP-06" class="pref" x="395" y="180" width="40" height="35" rx="4"/><text x="415" y="197" class="pref-label">山形</text></g>
+                    <g><rect id="JP-07" class="pref" x="440" y="220" width="40" height="35" rx="4"/><text x="460" y="237" class="pref-label">福島</text></g>
+                    
+                    /* 関東 */
+                    <g><rect id="JP-08" class="pref" x="440" y="260" width="40" height="35" rx="4"/><text x="460" y="277" class="pref-label">茨城</text></g>
+                    <g><rect id="JP-09" class="pref" x="395" y="220" width="40" height="35" rx="4"/><text x="415" y="237" class="pref-label">栃木</text></g>
+                    <g><rect id="JP-10" class="pref" x="350" y="220" width="40" height="35" rx="4"/><text x="370" y="237" class="pref-label">群馬</text></g>
+                    <g><rect id="JP-11" class="pref" x="350" y="260" width="40" height="35" rx="4"/><text x="370" y="277" class="pref-label">埼玉</text></g>
+                    <g><rect id="JP-12" class="pref" x="440" y="300" width="40" height="35" rx="4"/><text x="460" y="317" class="pref-label">千葉</text></g>
+                    <g><rect id="JP-13" class="pref" x="395" y="260" width="40" height="35" rx="4"/><text x="415" y="277" class="pref-label">東京</text></g>
+                    <g><rect id="JP-14" class="pref" x="395" y="300" width="40" height="35" rx="4"/><text x="415" y="317" class="pref-label">神奈川</text></g>
+                    
+                    /* 中部 */
+                    <g><rect id="JP-15" class="pref" x="350" y="180" width="40" height="35" rx="4"/><text x="370" y="197" class="pref-label">新潟</text></g>
+                    <g><rect id="JP-16" class="pref" x="305" y="180" width="40" height="35" rx="4"/><text x="325" y="197" class="pref-label">富山</text></g>
+                    <g><rect id="JP-17" class="pref" x="260" y="180" width="40" height="35" rx="4"/><text x="280" y="197" class="pref-label">石川</text></g>
+                    <g><rect id="JP-18" class="pref" x="260" y="220" width="40" height="35" rx="4"/><text x="280" y="237" class="pref-label">福井</text></g>
+                    <g><rect id="JP-19" class="pref" x="305" y="260" width="40" height="35" rx="4"/><text x="325" y="277" class="pref-label">山梨</text></g>
+                    <g><rect id="JP-20" class="pref" x="305" y="220" width="40" height="35" rx="4"/><text x="325" y="237" class="pref-label">長野</text></g>
+                    <g><rect id="JP-21" class="pref" x="260" y="260" width="40" height="35" rx="4"/><text x="280" y="277" class="pref-label">岐阜</text></g>
+                    <g><rect id="JP-22" class="pref" x="350" y="300" width="40" height="35" rx="4"/><text x="370" y="317" class="pref-label">静岡</text></g>
+                    <g><rect id="JP-23" class="pref" x="305" y="300" width="40" height="35" rx="4"/><text x="325" y="317" class="pref-label">愛知</text></g>
+                    
+                    /* 近畿 */
+                    <g><rect id="JP-24" class="pref" x="260" y="340" width="40" height="35" rx="4"/><text x="280" y="357" class="pref-label">三重</text></g>
+                    <g><rect id="JP-25" class="pref" x="215" y="260" width="40" height="35" rx="4"/><text x="235" y="277" class="pref-label">滋賀</text></g>
+                    <g><rect id="JP-26" class="pref" x="170" y="260" width="40" height="35" rx="4"/><text x="190" y="277" class="pref-label">京都</text></g>
+                    <g><rect id="JP-27" class="pref" x="170" y="300" width="40" height="35" rx="4"/><text x="190" y="317" class="pref-label">大阪</text></g>
+                    <g><rect id="JP-28" class="pref" x="125" y="260" width="40" height="35" rx="4"/><text x="145" y="277" class="pref-label">兵庫</text></g>
+                    <g><rect id="JP-29" class="pref" x="215" y="300" width="40" height="35" rx="4"/><text x="235" y="317" class="pref-label">奈良</text></g>
+                    <g><rect id="JP-30" class="pref" x="170" y="340" width="40" height="35" rx="4"/><text x="190" y="357" class="pref-label">和歌山</text></g>
+                    
+                    /* 中国・四国 */
+                    <g><rect id="JP-31" class="pref" x="80" y="260" width="40" height="35" rx="4"/><text x="100" y="277" class="pref-label">鳥取</text></g>
+                    <g><rect id="JP-32" class="pref" x="35" y="260" width="40" height="35" rx="4"/><text x="55" y="277" class="pref-label">島根</text></g>
+                    <g><rect id="JP-33" class="pref" x="80" y="300" width="40" height="35" rx="4"/><text x="100" y="317" class="pref-label">岡山</text></g>
+                    <g><rect id="JP-34" class="pref" x="35" y="300" width="40" height="35" rx="4"/><text x="55" y="317" class="pref-label">広島</text></g>
+                    <g><rect id="JP-35" class="pref" x="15" y="340" width="40" height="35" rx="4"/><text x="35" y="357" class="pref-label">山口</text></g>
+                    <g><rect id="JP-36" class="pref" x="80" y="390" width="40" height="35" rx="4"/><text x="100" y="407" class="pref-label">徳島</text></g>
+                    <g><rect id="JP-37" class="pref" x="80" y="350" width="40" height="35" rx="4"/><text x="100" y="367" class="pref-label">香川</text></g>
+                    <g><rect id="JP-38" class="pref" x="35" y="350" width="40" height="35" rx="4"/><text x="55" y="367" class="pref-label">愛媛</text></g>
+                    <g><rect id="JP-39" class="pref" x="35" y="390" width="40" height="35" rx="4"/><text x="55" y="407" class="pref-label">高知</text></g>
+                    
+                    /* 九州・沖縄 */
+                    <g><rect id="JP-40" class="pref" x="15" y="395" width="40" height="35" rx="4"/><text x="35" y="412" class="pref-label">福岡</text></g>
+                    <g><rect id="JP-41" class="pref" x="15" y="435" width="40" height="20" rx="4"/><text x="35" y="445" class="pref-label">佐賀</text></g>
+                    <g><rect id="JP-42" class="pref" x="10" y="460" width="30" height="30" rx="4"/><text x="25" y="475" class="pref-label">長崎</text></g>
+                    <g><rect id="JP-43" class="pref" x="60" y="435" width="40" height="35" rx="4"/><text x="80" y="452" class="pref-label">熊本</text></g>
+                    <g><rect id="JP-44" class="pref" x="60" y="395" width="40" height="35" rx="4"/><text x="80" y="412" class="pref-label">大分</text></g>
+                    <g><rect id="JP-45" class="pref" x="105" y="395" width="35" height="45" rx="4"/><text x="122" y="417" class="pref-label">宮崎</text></g>
+                    <g><rect id="JP-46" class="pref" x="105" y="445" width="40" height="35" rx="4"/><text x="125" y="462" class="pref-label">鹿児島</text></g>
+                    <g><rect id="JP-47" class="pref" x="10" y="520" width="50" height="25" rx="4"/><text x="35" y="532" class="pref-label">沖縄</text></g>
+                </g>
+            </svg>
+            <div class="legend">
+                <span>投票少</span>
+                <div class="legend-bar"></div>
+                <span>投票多</span>
+            </div>
+        </div>
 
-                <rect id="JP-13" class="prefecture" x="300" y="200" width="50" height="40" rx="5" fill="#cbd5e1" />
-                <text x="325" y="225" font-size="12" fill="#333" text-anchor="middle" pointer-events="none">東京</text>
-
-                <rect id="JP-27" class="prefecture" x="200" y="230" width="50" height="40" rx="5" fill="#cbd5e1" />
-                <text x="225" y="255" font-size="12" fill="#333" text-anchor="middle" pointer-events="none">大阪</text>
-
-                <rect id="JP-40" class="prefecture" x="80" y="260" width="50" height="40" rx="5" fill="#cbd5e1" />
-                <text x="105" y="285" font-size="12" fill="#333" text-anchor="middle" pointer-events="none">福岡</text>
-                
-                <rect id="JP-47" class="prefecture" x="80" y="340" width="50" height="30" rx="5" fill="#cbd5e1" />
-                <text x="105" y="360" font-size="12" fill="#333" text-anchor="middle" pointer-events="none">沖縄</text>
-            </g>
-        </svg>
-    </div>
-
-    <div class="status-box">
-        <div id="voted-status">まだ投票していません。地図上の地域を選んでください。</div>
-        <div id="info-panel" class="info-panel">他のユーザーの合計投票数: 計算中...</div>
+        <div class="info-card">
+            <div id="voted-status" class="status-box">
+                🗺️ 地域をタップして投票
+            </div>
+            <h3 class="ranking-title">🔥 現在の投票トップ5</h3>
+            <ul id="ranking-list" class="ranking-list">
+                </ul>
+        </div>
     </div>
 
     <script>
-        // 1. 他のユーザーの投票結果（ニアリアルタイムを想定した初期ダミーデータ）
-        // 本来はここにAPI等から取得した数値を入れます
-        const globalVotes = {
-            "JP-01": 45,  // 北海道
-            "JP-13": 120, // 東京 (多め)
-            "JP-27": 85,  // 大阪
-            "JP-40": 30,  // 福岡
-            "JP-47": 65   // 沖縄
+        // 47都道府県のマスターデータ (ISOコード順)
+        const prefMaster = {
+            "JP-01":"北海道","JP-02":"青森県","JP-03":"岩手県","JP-04":"宮城県","JP-05":"秋田県","JP-06":"山形県","JP-07":"福島県",
+            "JP-08":"茨城県","JP-09":"栃木県","JP-10":"群馬県","JP-11":"埼玉県","JP-12":"千葉県","JP-13":"東京都","JP-14":"神奈川県",
+            "JP-15":"新潟県","JP-16":"富山県","JP-17":"石川県","JP-18":"福井県","JP-19":"山梨県","JP-20":"長野県","JP-21":"岐阜県",
+            "JP-22":"静岡県","JP-23":"愛知県","JP-24":"三重県","JP-25":"滋賀県","JP-26":"京都府","JP-27":"大阪府","JP-28":"兵庫県",
+            "JP-29":"奈良県","JP-30":"和歌山県","JP-31":"鳥取県","JP-32":"島根県","JP-33":"岡山県","JP-34":"広島県","JP-35":"山口県",
+            "JP-36":"徳島県","JP-37":"香川県","JP-38":"愛媛県","JP-39":"高知県","JP-40":"福岡県","JP-41":"佐賀県","JP-42":"長崎県",
+            "JP-43":"熊本県","JP-44":"大分県","JP-45":"宮崎県","JP-46":"鹿児島県","JP-47":"沖縄県"
         };
 
-        const prefNames = {
-            "JP-01": "北海道", "JP-13": "東京都", "JP-27": "大阪府", "JP-40": "福岡県", "JP-47": "沖縄県"
-        };
+        // 他ユーザーの擬似投票結果の初期生成 (ニアリアルタイムのモックデータ)
+        const globalVotes = {};
+        Object.keys(prefMaster).forEach(code => {
+            // リアルなばらつきを持たせるため、初期値をランダム（10〜150票）に設定
+            globalVotes[code] = Math.floor(Math.random() * 140) + 10;
+        });
 
-        // 2. 投票数に応じてヒートマップ（色の濃淡）を計算して地図を塗る関数
-        function updateMapDisplay() {
-            Object.keys(globalVotes).forEach(prefId => {
-                const el = document.getElementById(prefId);
+        // 地図の色と右側のランキングを更新するコアロジック
+        function refreshDashboard() {
+            const votesArray = Object.values(globalVotes);
+            const maxVote = Math.max(...votesArray);
+            const minVote = Math.min(...votesArray);
+
+            // 1. 地図のカラーリング更新
+            Object.keys(globalVotes).forEach(code => {
+                const el = document.getElementById(code);
                 if (el) {
-                    const votes = globalVotes[prefId];
-                    // 投票数が多いほど、青色が濃くなる処理（最大150票と仮定）
-                    const alpha = Math.min(votes / 150, 1); 
-                    el.style.fill = `rgba(14, 165, 233, ${0.1 + alpha * 0.9})`; // ベースは薄い青、最大で濃い青
+                    const votes = globalVotes[code];
+                    // 最多得票数をもとに、相対的な色の濃淡(0.1〜1.0)を計算
+                    const ratio = maxVote === minVote ? 0.5 : (votes - minVote) / (maxVote - minVote);
+                    el.style.fill = `rgba(14, 165, 233, ${0.1 + ratio * 0.9})`; 
                 }
             });
 
-            // 総投票数の表示更新
-            const total = Object.values(globalVotes).reduce((a, b) => a + b, 0);
-            document.getElementById('info-panel').innerText = `全ユーザーの総投票数: ${total} 票 (定期更新データ)`;
+            // 2. 右側ランキングの更新
+            const sortedPrefs = Object.keys(globalVotes).sort((a, b) => globalVotes[b] - globalVotes[a]);
+            const rankingListEl = document.getElementById('ranking-list');
+            rankingListEl.innerHTML = ''; // 一旦クリア
+
+            // 上位5位（及びスクロールすれば全順位）を表示可能
+            sortedPrefs.forEach((code, index) => {
+                const li = document.createElement('li');
+                li.className = 'ranking-item';
+                li.innerHTML = `<span>${index + 1}. ${prefMaster[code]}</span><span>${globalVotes[code]} 票</span>`;
+                rankingListEl.appendChild(li);
+            });
         }
 
-        // 3. 各都道府県のクリックイベントを設定
-        document.querySelectorAll('.prefecture').forEach(prefEl => {
-            prefEl.addEventListener('click', (e) => {
+        // 各都道府県要素にクリック（タップ）イベントを登録
+        document.querySelectorAll('.pref').forEach(el => {
+            el.addEventListener('click', (e) => {
                 const prefId = e.target.id;
                 
-                // 自分の投票をデータに1票プラス（擬似的なデータ共有の反映）
+                // 1票追加
                 globalVotes[prefId] += 1;
                 
-                // 画面表示を更新
-                updateMapDisplay();
+                // 全体を再描画
+                refreshDashboard();
                 
-                // 自分がどこに投票したかを強調（枠線を太く、色をオレンジ等に）
-                document.querySelectorAll('.prefecture').forEach(el => el.style.stroke = "#ffffff");
-                e.target.style.stroke = "#f97316"; 
+                // 自分が今クリックした県にハイライト（枠線）を付与
+                document.querySelectorAll('.pref').forEach(p => p.style.stroke = "#ffffff");
+                e.target.style.stroke = var(--accent-color);
                 
-                document.getElementById('voted-status').innerText = `🎉 ${prefNames[prefId]} に投票しました！`;
+                // ステータス更新
+                document.getElementById('voted-status').innerHTML = `🎉 ${prefMaster[prefId]} に投票しました！`;
             });
         });
 
-        // 初期起動時に地図の色を反映
-        updateMapDisplay();
+        // ページ読み込み時に初期実行
+        refreshDashboard();
     </script>
 </body>
 </html>
