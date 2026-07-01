@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>47都道府県 リアルタイム投票プラットフォーム</title>
+    <title>【デジタル戦略部】私の地元応援募金実況中継</title>
     <style>
         :root {
             --bg-color: #f8fafc;
             --card-bg: #ffffff;
             --primary-color: #0ea5e9; /* ヒートマップのベース青色 */
-            --accent-color: #f97316;  /* 自分が投票した場所のオレンジ */
+            --accent-color: #f97316;  /* 自分が応援した場所のオレンジ */
             --text-main: #1e293b;
             --text-sub: #64748b;
             --border-color: #e2e8f0;
+            --danger-color: #ef4444;  /* リセットボタン用の赤色 */
         }
 
         body {
@@ -29,13 +30,17 @@
         header {
             text-align: center;
             margin-bottom: 24px;
-            max-width: 600px;
+            max-width: 650px;
         }
 
         h1 {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             margin: 0 0 8px 0;
             color: #0f172a;
+        }
+
+        @media (min-width: 768px) {
+            h1 { font-size: 1.8rem; }
         }
 
         .description {
@@ -50,6 +55,7 @@
             gap: 20px;
             width: 100%;
             max-width: 950px;
+            margin-bottom: 40px; /* 下部管理者エリアとの余白 */
         }
 
         @media (min-width: 768px) {
@@ -71,7 +77,7 @@
         svg {
             width: 100%;
             height: auto;
-            max-height: 600px;
+            max-height: 650px;
         }
 
         .pref {
@@ -120,10 +126,33 @@
             border-radius: 8px;
             text-align: center;
             font-weight: bold;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             border: 1px solid var(--border-color);
             font-size: 0.95rem;
         }
+
+        /* 状況更新ボタン */
+        .refresh-button {
+            width: 100%;
+            padding: 12px;
+            background-color: #0f172a;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease, opacity 0.2s ease;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .refresh-button:hover { background-color: #1e293b; }
+        .refresh-button:active { background-color: #334155; }
 
         .ranking-title {
             font-size: 1.1rem;
@@ -136,7 +165,7 @@
             list-style: none;
             padding: 0;
             margin: 0;
-            max-height: 380px;
+            max-height: 400px;
             overflow-y: auto;
         }
 
@@ -169,20 +198,47 @@
             background: linear-gradient(to right, rgba(14, 165, 233, 0.1), rgba(14, 165, 233, 1));
             border-radius: 4px;
         }
+
+        /* 管理者用エリアのスタイル */
+        .admin-section {
+            width: 100%;
+            max-width: 950px;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 24px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .admin-button {
+            padding: 10px 20px;
+            background-color: transparent;
+            color: var(--text-sub);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .admin-button:hover {
+            background-color: var(--danger-color);
+            color: #ffffff;
+            border-color: var(--danger-color);
+        }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>47都道府県 投票アプリ</h1>
+        <h1>【デジタル戦略部】私の地元応援募金実況中継</h1>
         <div class="description">
-            日本地図をタップして投票してください。他ユーザーの投票結果（グラデーションの濃淡）に、あなたの1票がリアルタイムに集計・共有されます。
+            日本地図をタップして投票してください。「状況を最新に更新」ボタンを押すと、全国の最新の応援状況がまとめて集計・反映されます。
         </div>
     </header>
 
     <div class="main-container">
         <div class="map-card">
-            <svg viewBox="0 0 540 610">
+            <svg viewBox="0 0 540 660">
                 <rect width="100%" height="100%" fill="#f8fafc" rx="12"/>
                 <g id="map-grid">
                     <g><rect id="JP-01" class="pref" x="440" y="20" width="60" height="50" rx="4"/><text x="470" y="45" class="pref-label">北海道</text></g>
@@ -224,36 +280,43 @@
                     <g><rect id="JP-33" class="pref" x="80" y="300" width="40" height="35" rx="4"/><text x="100" y="317" class="pref-label">岡山</text></g>
                     <g><rect id="JP-34" class="pref" x="35" y="300" width="40" height="35" rx="4"/><text x="55" y="317" class="pref-label">広島</text></g>
                     <g><rect id="JP-35" class="pref" x="15" y="340" width="40" height="35" rx="4"/><text x="35" y="357" class="pref-label">山口</text></g>
-                    <g><rect id="JP-37" class="pref" x="80" y="350" width="40" height="35" rx="4"/><text x="100" y="367" class="pref-label">香川</text></g>
-                    <g><rect id="JP-38" class="pref" x="35" y="350" width="40" height="35" rx="4"/><text x="55" y="367" class="pref-label">愛媛</text></g>
-                    <g><rect id="JP-36" class="pref" x="80" y="390" width="40" height="35" rx="4"/><text x="100" y="407" class="pref-label">徳島</text></g>
-                    <g><rect id="JP-39" class="pref" x="35" y="390" width="40" height="35" rx="4"/><text x="55" y="407" class="pref-label">高知</text></g>
+                    <g><rect id="JP-37" class="pref" x="80" y="390" width="40" height="35" rx="4"/><text x="100" y="407" class="pref-label">香川</text></g>
+                    <g><rect id="JP-38" class="pref" x="35" y="390" width="40" height="35" rx="4"/><text x="55" y="407" class="pref-label">愛媛</text></g>
+                    <g><rect id="JP-36" class="pref" x="80" y="430" width="40" height="35" rx="4"/><text x="100" y="447" class="pref-label">徳島</text></g>
+                    <g><rect id="JP-39" class="pref" x="35" y="430" width="40" height="35" rx="4"/><text x="55" y="447" class="pref-label">高知</text></g>
                     
-                    <g><rect id="JP-40" class="pref" x="60" y="440" width="40" height="35" rx="4"/><text x="80" y="457" class="pref-label">福岡</text></g>
-                    <g><rect id="JP-44" class="pref" x="105" y="440" width="40" height="35" rx="4"/><text x="125" y="457" class="pref-label">大分</text></g>
-                    <g><rect id="JP-41" class="pref" x="15" y="440" width="40" height="35" rx="4"/><text x="35" y="457" class="pref-label">佐賀</text></g>
-                    <g><rect id="JP-42" class="pref" x="15" y="480" width="40" height="35" rx="4"/><text x="35" y="497" class="pref-label">長崎</text></g>
-                    <g><rect id="JP-43" class="pref" x="60" y="480" width="40" height="35" rx="4"/><text x="80" y="497" class="pref-label">熊本</text></g>
-                    <g><rect id="JP-45" class="pref" x="105" y="480" width="40" height="35" rx="4"/><text x="125" y="497" class="pref-label">宮崎</text></g>
-                    <g><rect id="JP-46" class="pref" x="60" y="520" width="40" height="35" rx="4"/><text x="80" y="537" class="pref-label">鹿児島</text></g>
-                    <g><rect id="JP-47" class="pref" x="15" y="565" width="50" height="25" rx="4"/><text x="40" y="577" class="pref-label">沖縄</text></g>
+                    <g><rect id="JP-40" class="pref" x="60" y="480" width="40" height="35" rx="4"/><text x="80" y="497" class="pref-label">福岡</text></g>
+                    <g><rect id="JP-44" class="pref" x="105" y="480" width="40" height="35" rx="4"/><text x="125" y="457" class="pref-label">大分</text></g>
+                    <g><rect id="JP-41" class="pref" x="15" y="480" width="40" height="35" rx="4"/><text x="35" y="497" class="pref-label">佐賀</text></g>
+                    <g><rect id="JP-42" class="pref" x="15" y="520" width="40" height="35" rx="4"/><text x="35" y="537" class="pref-label">長崎</text></g>
+                    <g><rect id="JP-43" class="pref" x="60" y="520" width="40" height="35" rx="4"/><text x="80" y="537" class="pref-label">熊本</text></g>
+                    <g><rect id="JP-45" class="pref" x="105" y="520" width="40" height="35" rx="4"/><text x="125" y="537" class="pref-label">宮崎</text></g>
+                    <g><rect id="JP-46" class="pref" x="60" y="560" width="40" height="35" rx="4"/><text x="80" y="577" class="pref-label">鹿児島</text></g>
+                    <g><rect id="JP-47" class="pref" x="15" y="615" width="50" height="25" rx="4"/><text x="40" y="627" class="pref-label">沖縄</text></g>
                 </g>
             </svg>
             <div class="legend">
-                <span>投票少</span>
+                <span>応援少</span>
                 <div class="legend-bar"></div>
-                <span>投票多</span>
+                <span>応援多</span>
             </div>
         </div>
 
         <div class="info-card">
             <div id="voted-status" class="status-box">
-                🗺️ 地域をタップして投票
+                🗺️ 地図上の都道府県をタップして投票
             </div>
-            <h3 class="ranking-title">🔥 現在の投票順位</h3>
+            
+            <button id="refresh-btn" class="refresh-button">🔄 状況を最新に更新</button>
+
+            <h3 class="ranking-title">🔥 現在の応援順位</h3>
             <ul id="ranking-list" class="ranking-list">
                 </ul>
         </div>
+    </div>
+
+    <div class="admin-section">
+        <button id="admin-reset-btn" class="admin-button">⚙️ 管理者用データリセット</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -288,22 +351,44 @@
             "JP-43":"熊本県","JP-44":"大分県","JP-45":"宮崎県","JP-46":"鹿児島県","JP-47":"沖縄県"
         };
 
-        // 投票データ保持用
+        // 応援データ保持用
         let globalVotes = {};
         Object.keys(prefMaster).forEach(code => { globalVotes[code] = 0; });
 
-        // Firebaseデータのリアルタイム監視・受信処理
-        database.ref('votes').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
+        // Firebaseから一度だけデータを明示的に取得する関数
+        function fetchLatestVotes() {
+            const btn = document.getElementById('refresh-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = "⏳ 状況更新中...";
+                btn.style.opacity = "0.7";
+            }
+
+            database.ref('votes').once('value').then((snapshot) => {
+                const data = snapshot.val();
+                
+                // データが空（リセット後など）の場合はすべて0で初期化
                 Object.keys(prefMaster).forEach(code => {
-                    globalVotes[code] = data[code] || 0;
+                    globalVotes[code] = (data && data[code]) ? data[code] : 0;
                 });
                 refreshDashboard();
-            }
-        });
+                
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = "🔄 状況を最新に更新";
+                    btn.style.opacity = "1";
+                }
+            }).catch((error) => {
+                console.error("データ再取得エラー:", error);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = "🔄 状況を最新に更新";
+                    btn.style.opacity = "1";
+                }
+            });
+        }
 
-        // 画面描画の更新
+        // 画面描画の更新（地図の濃淡と右側ランキング）
         function refreshDashboard() {
             const votesArray = Object.values(globalVotes);
             const maxVote = Math.max(...votesArray);
@@ -315,7 +400,7 @@
                 if (el) {
                     const votes = globalVotes[code];
                     if (votes === 0) {
-                        el.style.fill = "#cbd5e1"; // 0票は初期グレー
+                        el.style.fill = "#cbd5e1"; // 0応援は初期グレー
                     } else {
                         const ratio = maxVote === minVote ? 0.5 : (votes - minVote) / (maxVote - minVote);
                         el.style.fill = `rgba(14, 165, 233, ${0.15 + ratio * 0.85})`; 
@@ -331,29 +416,63 @@
             sortedPrefs.forEach((code, index) => {
                 const li = document.createElement('li');
                 li.className = 'ranking-item';
-                li.innerHTML = `<span>${index + 1}. ${prefMaster[code]}</span><span>${globalVotes[code]} 票</span>`;
+                li.innerHTML = `<span>${index + 1}. ${prefMaster[code]}</span><span>${globalVotes[code]} 回</span>`;
                 rankingListEl.appendChild(li);
             });
         }
 
-        // クリック（投票アクション）イベント
+        // クリック（応援アクション）イベント
         document.querySelectorAll('.pref').forEach(el => {
             el.addEventListener('click', (e) => {
                 const prefId = e.target.id;
                 
                 database.ref('votes/' + prefId).transaction((currentVotes) => {
                     return (currentVotes || 0) + 1;
+                }, (error, committed, snapshot) => {
+                    if (committed) {
+                        globalVotes[prefId] = snapshot.val();
+                        refreshDashboard();
+                    }
                 });
                 
                 document.querySelectorAll('.pref').forEach(p => p.style.stroke = "#ffffff");
                 e.target.style.stroke = "var(--accent-color)";
                 
-                document.getElementById('voted-status').innerHTML = `🎉 ${prefMaster[prefId]} に投票しました！`;
+                document.getElementById('voted-status').innerHTML = `🎉 ${prefMaster[prefId]} を応援しました！`;
             });
         });
 
-        // 初回表示の実行
-        refreshDashboard();
+        // 【新規】管理者用リセットボタンのイベント処理
+        document.getElementById('admin-reset-btn').addEventListener('click', () => {
+            const inputPassword = prompt("管理者用パスワードを入力してください：");
+            
+            if (inputPassword === "admin") {
+                const confirmReset = confirm("【警告】本当にこれまでのすべての応援データをリセットしてよろしいですか？この操作は取り消せません。");
+                
+                if (confirmReset) {
+                    // Firebase上の'votes'ノードをクリア
+                    database.ref('votes').set(null)
+                        .then(() => {
+                            alert("すべてのデータを正常にリセットしました。");
+                            fetchLatestVotes(); // 画面を初期状態に更新
+                            document.getElementById('voted-status').innerHTML = "🗺️ 地図上の都道府県をタップして投票";
+                            document.querySelectorAll('.pref').forEach(p => p.style.stroke = "#ffffff");
+                        })
+                        .catch((error) => {
+                            alert("リセット処理に失敗しました: " + error.message);
+                        });
+                }
+            } else if (inputPassword !== null) {
+                // キャンセルが押されず、かつ間違ったパスワードが入力された場合
+                alert("パスワードが正しくありません。認証に失敗しました。");
+            }
+        });
+
+        // ボタンクリックで手動更新を走らせるイベント登録
+        document.getElementById('refresh-btn').addEventListener('click', fetchLatestVotes);
+
+        // 初回起動時に、サーバーから最新データを取得して初期描画
+        fetchLatestVotes();
     </script>
 </body>
 </html>
