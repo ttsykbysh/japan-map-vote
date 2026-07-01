@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日本地図 投票シミュレーター</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { margin-bottom: 5px; color: #2c3e50; }
+        .description { color: #7f8c8d; margin-bottom: 20px; text-align: center; }
+        
+        /* 地図のコンテナ */
+        .map-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        /* SVG都道府県の基本スタイル */
+        .prefecture {
+            cursor: pointer;
+            transition: fill 0.3s ease, stroke 0.3s ease;
+            stroke: #ffffff;
+            stroke-width: 2;
+        }
+        .prefecture:hover {
+            opacity: 0.8;
+            stroke: #2c3e50;
+        }
+
+        /* ステータス表示 */
+        .status-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #eef2f7;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 560px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .info-panel {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>都道府県 投票アプリ</h1>
+    <div class="description">都道府県をタップして投票してください。他ユーザーの投票結果（グラデーション）にあなたの1票が反映されます。</div>
+
+    <div class="map-container">
+        <svg viewBox="0 0 500 400" width="100%" height="100%">
+            <rect width="100%" height="100%" fill="#f8fafc"/>
+            
+            <g id="japan-map">
+                <rect id="JP-01" class="prefecture" x="350" y="20" width="80" height="60" rx="5" fill="#cbd5e1" />
+                <text x="390" y="55" font-size="12" fill="#333" text-anchor="middle" pointer-events="none">北海道</text>
+
+                <rect id="JP-13" class="prefecture" x="300" y="200" width="50" height="40" rx="5" fill="#cbd5e1" />
+                <text x="325" y="225" font-size="12" fill="#333" text-anchor="middle" pointer-events="none">東京</text>
+
+                <rect id="JP-27" class="prefecture" x="200" y="230" width="50" height="40" rx="5" fill="#cbd5e1" />
+                <text x="225" y="255" font-size="12" fill="#333" text-anchor="middle" pointer-events="none">大阪</text>
+
+                <rect id="JP-40" class="prefecture" x="80" y="260" width="50" height="40" rx="5" fill="#cbd5e1" />
+                <text x="105" y="285" font-size="12" fill="#333" text-anchor="middle" pointer-events="none">福岡</text>
+                
+                <rect id="JP-47" class="prefecture" x="80" y="340" width="50" height="30" rx="5" fill="#cbd5e1" />
+                <text x="105" y="360" font-size="12" fill="#333" text-anchor="middle" pointer-events="none">沖縄</text>
+            </g>
+        </svg>
+    </div>
+
+    <div class="status-box">
+        <div id="voted-status">まだ投票していません。地図上の地域を選んでください。</div>
+        <div id="info-panel" class="info-panel">他のユーザーの合計投票数: 計算中...</div>
+    </div>
+
+    <script>
+        // 1. 他のユーザーの投票結果（ニアリアルタイムを想定した初期ダミーデータ）
+        // 本来はここにAPI等から取得した数値を入れます
+        const globalVotes = {
+            "JP-01": 45,  // 北海道
+            "JP-13": 120, // 東京 (多め)
+            "JP-27": 85,  // 大阪
+            "JP-40": 30,  // 福岡
+            "JP-47": 65   // 沖縄
+        };
+
+        const prefNames = {
+            "JP-01": "北海道", "JP-13": "東京都", "JP-27": "大阪府", "JP-40": "福岡県", "JP-47": "沖縄県"
+        };
+
+        // 2. 投票数に応じてヒートマップ（色の濃淡）を計算して地図を塗る関数
+        function updateMapDisplay() {
+            Object.keys(globalVotes).forEach(prefId => {
+                const el = document.getElementById(prefId);
+                if (el) {
+                    const votes = globalVotes[prefId];
+                    // 投票数が多いほど、青色が濃くなる処理（最大150票と仮定）
+                    const alpha = Math.min(votes / 150, 1); 
+                    el.style.fill = `rgba(14, 165, 233, ${0.1 + alpha * 0.9})`; // ベースは薄い青、最大で濃い青
+                }
+            });
+
+            // 総投票数の表示更新
+            const total = Object.values(globalVotes).reduce((a, b) => a + b, 0);
+            document.getElementById('info-panel').innerText = `全ユーザーの総投票数: ${total} 票 (定期更新データ)`;
+        }
+
+        // 3. 各都道府県のクリックイベントを設定
+        document.querySelectorAll('.prefecture').forEach(prefEl => {
+            prefEl.addEventListener('click', (e) => {
+                const prefId = e.target.id;
+                
+                // 自分の投票をデータに1票プラス（擬似的なデータ共有の反映）
+                globalVotes[prefId] += 1;
+                
+                // 画面表示を更新
+                updateMapDisplay();
+                
+                // 自分がどこに投票したかを強調（枠線を太く、色をオレンジ等に）
+                document.querySelectorAll('.prefecture').forEach(el => el.style.stroke = "#ffffff");
+                e.target.style.stroke = "#f97316"; 
+                
+                document.getElementById('voted-status').innerText = `🎉 ${prefNames[prefId]} に投票しました！`;
+            });
+        });
+
+        // 初期起動時に地図の色を反映
+        updateMapDisplay();
+    </script>
+</body>
+</html>
